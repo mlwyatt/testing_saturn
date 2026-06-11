@@ -1,5 +1,5 @@
 # Development dockerfile
-FROM ruby:3.4.4 AS base
+FROM ruby:4.0.1 AS base
 
 ENV NODE_MAJOR=18
 

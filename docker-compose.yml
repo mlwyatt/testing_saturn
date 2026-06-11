@@ -23,25 +23,17 @@ x-shared: &shared
   environment:
     <<: *rails_env
     DB_HOST: db
-    DB_USER: root
-    DB_PASSWORD: password
     CLAUDE_CONFIG_DIR: "/root/.claude"
 
 services:
   db:
-    image: mysql:8.0.36
-    command:
-      # Set dev db log retention to 7 days, default was 30 days
-      - '--binlog-expire-logs-seconds=604800'
-      # This `command` needs enabled when the volume is created and the `db` container starts for the very first time
-      # - '--default-authentication-plugin=mysql_native_password'
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_PASSWORD: password
-    ports:
-      - ${SATURN_DB_PORT:-3306}:3306
+    image: postgres:17.2-alpine
     volumes:
-      - saturn-database:/var/lib/mysql
+      - saturn-database:/var/lib/postgresql/data:delegated
+    environment:
+      POSTGRES_PASSWORD: password
+    ports:
+      - ${SATURN_DB_PORT:-5432}:5432
   web:
     <<: *shared
     command: rails s -p 3000 -b 0.0.0.0
