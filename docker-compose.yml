@@ -1,0 +1,56 @@
+# Development compose override
+# Command: docker compose up -d
+
+# prepend with x- for docker to ignore
+x-build: &build
+  # `build` and `image` to only build the image once
+  build:
+    context: .
+    target: base
+  image: "saturn:${SATURN_TAG:-1}"
+  volumes:
+    - .:/${APP_PATH:-app}
+    - node_modules:/${APP_PATH:-app}/node_modules
+    - bundle:/usr/local/bundle
+x-interactive: &interactive
+  # allow interactive connection
+  tty: true
+  stdin_open: true
+x-rails-env: &rails_env
+  RAILS_ENV: development
+x-shared: &shared
+  <<: [ *build, *interactive ]
+  environment:
+    <<: *rails_env
+    DB_HOST: db
+    DB_USER: root
+    DB_PASSWORD: password
+    CLAUDE_CONFIG_DIR: "/root/.claude"
+
+services:
+  db:
+    image: mysql:8.0.36
+    command:
+      # Set dev db log retention to 7 days, default was 30 days
+      - '--binlog-expire-logs-seconds=604800'
+      # This `command` needs enabled when the volume is created and the `db` container starts for the very first time
+      # - '--default-authentication-plugin=mysql_native_password'
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_PASSWORD: password
+    ports:
+      - ${SATURN_DB_PORT:-3306}:3306
+    volumes:
+      - saturn-database:/var/lib/mysql
+  web:
+    <<: *shared
+    command: rails s -p 3000 -b 0.0.0.0
+    depends_on:
+      - db
+    ports:
+      - ${SATURN_RAILS_PORT:-3000}:3000
+
+volumes:
+  bundle:
+  node_modules:
+  saturn-database:
